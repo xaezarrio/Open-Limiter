@@ -1,0 +1,565 @@
+<Window x:Class="OpenLimiter.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="OpenLimiter"
+        Width="1280"
+        Height="800"
+        MinWidth="1000"
+        MinHeight="650"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded"
+        Closed="Window_Closed">
+    <Grid Background="{StaticResource CanvasBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Padding="24,18" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock FontSize="24" FontWeight="SemiBold" Text="OpenLimiter" />
+                    <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" Text="Per-process network gates for Windows" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Margin="0,0,8,0" Padding="10,7" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                        <StackPanel Orientation="Horizontal">
+                            <Rectangle x:Name="DriverStateMarker" Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center" Fill="{StaticResource MutedBrush}" RadiusX="1" RadiusY="1" />
+                            <TextBlock x:Name="DriverStateText" VerticalAlignment="Center" Text="Checking WFP driver" />
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="AccessStateBorder"
+                            Margin="0,0,12,0"
+                            Padding="10,7"
+                            AutomationProperties.Name="Policy service status"
+                            Background="{StaticResource RaisedBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel Orientation="Horizontal">
+                            <Rectangle x:Name="AccessStateMarker" Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center" Fill="{StaticResource MutedBrush}" RadiusX="1" RadiusY="1" />
+                            <TextBlock x:Name="AccessStateText" VerticalAlignment="Center" Text="Checking access" />
+                        </StackPanel>
+                    </Border>
+                    <Button x:Name="ServiceRetryButton"
+                            Margin="0,0,8,0"
+                            AutomationProperties.Name="Retry policy service connection"
+                            Click="ServiceRetryButton_Click"
+                            Content="Retry service" />
+                    <Button AutomationProperties.Name="Refresh process list and saved policies" Click="RefreshButton_Click" Content="Refresh" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="390" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Margin="20" Padding="18" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="7">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock FontSize="18" FontWeight="SemiBold" Text="Executable groups" />
+                            <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" Text="All instances sharing the same path" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="ProcessCountText" TextAlignment="Right" Foreground="{StaticResource CyanBrush}" FontSize="11" FontWeight="SemiBold" />
+                            <TextBlock x:Name="TrafficStateText" Margin="0,4,0,0" Text="Traffic: connecting" TextAlignment="Right" Foreground="{StaticResource MutedBrush}" FontSize="10" />
+                            <Button x:Name="ProcessSortButton"
+                                    Margin="0,7,0,0"
+                                    Padding="9,5"
+                                    MinHeight="30"
+                                    AutomationProperties.Name="Sort executable groups by current traffic"
+                                    Click="ProcessSortButton_Click"
+                                    Content="Sort by traffic"
+                                    ToolTip="Order executable groups by current measured upload and download rate." />
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Grid.Row="1" Margin="0,0,0,14">
+                        <TextBlock Margin="0,0,0,6" Style="{StaticResource SectionLabel}" Text="SEARCH" />
+                        <TextBox x:Name="ProcessSearchBox"
+                                 AutomationProperties.Name="Search executable groups"
+                                 TextChanged="ProcessSearchBox_TextChanged"
+                                 ToolTip="Filter by process name, path, or process ID" />
+                    </StackPanel>
+                    <Grid Grid.Row="2">
+                        <ListBox x:Name="ProcessList"
+                                 AutomationProperties.Name="Executable process groups"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 SelectionChanged="ProcessList_SelectionChanged"
+                                 VirtualizingPanel.IsVirtualizing="True"
+                                 VirtualizingPanel.VirtualizationMode="Recycling">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock FontWeight="SemiBold" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1" Margin="10,0,0,0" Foreground="{StaticResource MutedBrush}" Text="{Binding InstanceLabel}" ToolTip="{Binding ProcessIdsLabel}" />
+                                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="0,4,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="{Binding PathLabel}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ExecutablePath}" />
+                                        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Margin="0,5,0,0" Foreground="{StaticResource CyanBrush}" FontSize="11" Text="{Binding TrafficLabel}" TextTrimming="CharacterEllipsis" ToolTip="{Binding TrafficToolTip}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <StackPanel x:Name="ProcessLoadingState" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ProgressBar Width="180" Height="4" IsIndeterminate="True" />
+                            <TextBlock Margin="0,12,0,0" Foreground="{StaticResource MutedBrush}" Text="Grouping running processes..." />
+                        </StackPanel>
+                        <StackPanel x:Name="ProcessEmptyState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="No matching executable" />
+                            <TextBlock Margin="0,6,0,0" Foreground="{StaticResource MutedBrush}" Text="Clear the search or refresh the list." />
+                        </StackPanel>
+                        <StackPanel x:Name="ProcessErrorState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock HorizontalAlignment="Center" Foreground="{StaticResource DangerBrush}" FontSize="16" FontWeight="SemiBold" Text="Process list unavailable" />
+                            <TextBlock x:Name="ProcessErrorText" MaxWidth="280" Margin="0,6,0,0" TextAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Column="1" Margin="0,20,20,20" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <Grid MinHeight="590">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Padding="22" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="7">
+                    <Grid>
+                        <StackPanel x:Name="NoSelectionState">
+                            <TextBlock FontSize="19" FontWeight="SemiBold" Text="Choose a process to open its traffic gate" />
+                            <TextBlock Margin="0,7,0,0" Foreground="{StaticResource MutedBrush}" Text="Protected processes remain visible, but Windows may hide their executable path." />
+                        </StackPanel>
+
+                        <Grid x:Name="RuleEditor" Visibility="Collapsed">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0" Margin="0,0,0,18">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="280" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock x:Name="SelectedProcessName" FontSize="20" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="SelectedProcessPath" Margin="0,5,20,0" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}" />
+                                </StackPanel>
+                                <Grid Grid.Column="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="92" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,10,0">
+                                        <TextBlock Style="{StaticResource SectionLabel}" Text="RULE NAME" />
+                                        <TextBox x:Name="RuleNameBox" Margin="0,6,0,0" AutomationProperties.Name="Rule name" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Style="{StaticResource SectionLabel}" Text="MINUTES" />
+                                        <TextBox x:Name="DurationMinutesBox"
+                                                 Margin="0,6,0,0"
+                                                 AutomationProperties.Name="Temporary rule duration in minutes"
+                                                 ToolTip="Leave blank for a permanent rule; maximum 10080 minutes"
+                                                 MaxLength="5" />
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="14" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0" Padding="18" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource CyanBrush}" BorderThickness="1" CornerRadius="6">
+                                    <StackPanel>
+                                        <StackPanel Margin="0,0,0,12">
+                                            <TextBlock Foreground="{StaticResource CyanBrush}" FontSize="16" FontWeight="SemiBold" Text="Inbound" />
+                                            <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" Text="Download / internet to app" />
+                                        </StackPanel>
+                                        <CheckBox x:Name="BlockInboundCheckBox" AutomationProperties.Name="Block inbound traffic" Content="Block all inbound traffic" />
+                                        <Separator Margin="0,14" Background="{StaticResource BorderBrush}" />
+                                        <TextBlock Style="{StaticResource SectionLabel}" Text="DOWNLOAD RATE LIMIT" />
+                                        <Grid Margin="0,7,0,0" IsEnabled="False" ToolTip="Download rate limiting is deferred to the project backlog.">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="72" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox AutomationProperties.Name="Download rate limit unavailable" Text="Backlog" />
+                                            <Border Grid.Column="1" Margin="8,0,0,0" Background="{StaticResource CanvasBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" Text="Mbps" />
+                                            </Border>
+                                        </Grid>
+                                        <TextBlock Margin="0,8,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="Download rate limiting is deferred; upload limiting uses Windows QoS." TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="2" Padding="18" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource AmberBrush}" BorderThickness="1" CornerRadius="6">
+                                    <StackPanel>
+                                        <StackPanel Margin="0,0,0,12">
+                                            <TextBlock Foreground="{StaticResource AmberBrush}" FontSize="16" FontWeight="SemiBold" Text="Outbound" />
+                                            <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" Text="Upload / app to internet" />
+                                        </StackPanel>
+                                        <CheckBox x:Name="BlockOutboundCheckBox" AutomationProperties.Name="Block outbound traffic" Checked="OutboundControl_Changed" Unchecked="OutboundControl_Changed" Content="Block all outbound traffic" />
+                                        <Separator Margin="0,14" Background="{StaticResource BorderBrush}" />
+                                        <TextBlock Style="{StaticResource SectionLabel}" Text="UPLOAD RATE LIMIT" />
+                                        <Grid Margin="0,7,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="72" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="UploadRateBox" AutomationProperties.Name="Upload rate limit" ToolTip="Leave blank for no upload limit" />
+                                            <Border Grid.Column="1" Margin="8,0,0,0" Background="{StaticResource CanvasBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" Text="Mbps" />
+                                            </Border>
+                                        </Grid>
+                                        <TextBlock Margin="0,8,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="Uses Windows Policy-based QoS." />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <Grid Grid.Row="2" Margin="0,18,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="EditorHintText" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" Text="Choose at least one block or upload limit." />
+                                <Button x:Name="ApplyRuleButton"
+                                        Grid.Column="1"
+                                        MinWidth="152"
+                                        AutomationProperties.Name="Apply network rule"
+                                        Click="ApplyRuleButton_Click"
+                                        Content="Apply network rule"
+                                        Style="{StaticResource PrimaryButton}" />
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="1" MinHeight="190" Margin="0,14,0,0" Padding="22" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="7">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock FontSize="18" FontWeight="SemiBold" Text="Saved policies" />
+                                <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" Text="Persistent intent and the enforcement Windows received" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock x:Name="RuleCountText" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{StaticResource AmberBrush}" FontWeight="SemiBold" />
+                                <Button x:Name="ClearRulesButton"
+                                        MinWidth="96"
+                                        AutomationProperties.Name="Remove all saved network policies"
+                                        AutomationProperties.HelpText="Removes every saved policy and its Windows firewall and QoS enforcement"
+                                        Click="ClearRulesButton_Click"
+                                        Content="Remove all" />
+                            </StackPanel>
+                        </Grid>
+                        <Grid Grid.Row="1">
+                            <ListBox x:Name="RuleList" AutomationProperties.Name="Saved network policies" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="1.4*" />
+                                                <ColumnDefinition Width="1.2*" />
+                                                <ColumnDefinition Width="1.8*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Margin="0,0,14,0">
+                                                <TextBlock FontWeight="SemiBold" Text="{Binding Rule.DisplayName}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="{Binding Rule.ExecutablePath}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Rule.ExecutablePath}" />
+                                                <TextBlock Margin="0,5,0,0" FontSize="11" FontWeight="SemiBold" Text="{Binding StatusLabel}" />
+                                                <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="{Binding ExpiryLabel}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                                                <TextBlock Style="{StaticResource SectionLabel}" Text="BLOCK" />
+                                                <TextBlock Margin="0,3,0,0" Text="{Binding BlockLabel}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Margin="0,0,14,0">
+                                                <TextBlock Style="{StaticResource SectionLabel}" Text="UPLOAD LIMIT" />
+                                                <TextBlock Margin="0,3,0,0" Text="{Binding UploadLabel}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="3">
+                                                <Button MinWidth="104"
+                                                        AutomationProperties.Name="{Binding ToggleAutomationName}"
+                                                        AutomationProperties.HelpText="Pause removes Windows enforcement but keeps the saved configuration; Resume reapplies it"
+                                                        Click="ToggleRuleButton_Click"
+                                                        Content="{Binding ToggleActionLabel}"
+                                                        Tag="{Binding}" />
+                                                <Button MinWidth="104"
+                                                        Margin="0,7,0,0"
+                                                        AutomationProperties.Name="{Binding Rule.DisplayName, StringFormat=Remove saved network policy for {0}}"
+                                                        AutomationProperties.HelpText="Removes this saved policy and its Windows firewall and QoS enforcement"
+                                                        Click="RemoveRuleButton_Click"
+                                                        Content="Remove rule"
+                                                        Tag="{Binding}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <StackPanel x:Name="RuleLoadingState" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ProgressBar Width="180" Height="4" IsIndeterminate="True" />
+                                <TextBlock Margin="0,12,0,0" Foreground="{StaticResource MutedBrush}" Text="Loading saved policies..." />
+                            </StackPanel>
+                            <StackPanel x:Name="RuleEmptyState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="No policies yet" />
+                                <TextBlock Margin="0,6,0,0" Foreground="{StaticResource MutedBrush}" Text="Select a process and apply its first network rule." />
+                            </StackPanel>
+                            <StackPanel x:Name="RuleErrorState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock HorizontalAlignment="Center" Foreground="{StaticResource DangerBrush}" FontSize="16" FontWeight="SemiBold" Text="Saved policies unavailable" />
+                                <TextBlock x:Name="RuleErrorText" MaxWidth="420" Margin="0,6,0,0" TextAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" />
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="2" MinHeight="250" Margin="0,14,0,0" Padding="22" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="7">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock FontSize="18" FontWeight="SemiBold" Text="Profiles &amp; schedules" />
+                                <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" Text="Capture a policy set; select a profile row to activate or schedule it on the PC's local clock" />
+                            </StackPanel>
+                            <TextBlock x:Name="AutomationStateText" Grid.Column="1" VerticalAlignment="Center" Foreground="{StaticResource CyanBrush}" FontWeight="SemiBold" Text="Loading automation" />
+                        </Grid>
+
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="14" />
+                                <ColumnDefinition Width="1.25*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Padding="14" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="5">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="ProfileNameBox" AutomationProperties.Name="New profile name" ToolTip="Name for a snapshot of all current saved policies" />
+                                        <Button Grid.Column="1" Margin="8,0,0,0" AutomationProperties.Name="Save current policies as profile" Click="SaveProfileButton_Click" Content="Save current" />
+                                    </Grid>
+                                    <ListBox x:Name="ProfileList" Grid.Row="1" MaxHeight="170" Margin="0,10,0,0" AutomationProperties.Name="Policy profiles" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel VerticalAlignment="Center">
+                                                        <TextBlock FontWeight="SemiBold" Text="{Binding Profile.Name}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="{Binding RuleCountLabel}" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                        <Button Padding="9,5" MinHeight="30" AutomationProperties.Name="{Binding Profile.Name, StringFormat=Activate profile {0}}" Click="ActivateProfileButton_Click" Content="Activate" Tag="{Binding}" />
+                                                        <Button Margin="6,0,0,0" Padding="9,5" MinHeight="30" AutomationProperties.Name="{Binding Profile.Name, StringFormat=Delete profile {0}}" Click="DeleteProfileButton_Click" Content="Delete" Tag="{Binding}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+
+                            <Border Grid.Column="2" Padding="14" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="5">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="1.3*" />
+                                            <ColumnDefinition Width="1.4*" />
+                                            <ColumnDefinition Width="80" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="ScheduleNameBox" Margin="0,0,6,0" AutomationProperties.Name="Schedule name" ToolTip="Schedule name" />
+                                        <TextBox x:Name="ScheduleDaysBox" Grid.Column="1" Margin="0,0,6,0" AutomationProperties.Name="Schedule days" Text="Weekdays" ToolTip="daily, weekdays, weekend, or comma-separated Mon,Tue,Wed,Thu,Fri,Sat,Sun" />
+                                        <TextBox x:Name="ScheduleTimeBox" Grid.Column="2" Margin="0,0,6,0" AutomationProperties.Name="Schedule local time" Text="09:00" ToolTip="24-hour local time, HH:mm" />
+                                        <Button Grid.Column="3" Padding="9,5" AutomationProperties.Name="Add schedule for selected profile" Click="AddScheduleButton_Click" Content="Add" ToolTip="Schedule the selected profile" />
+                                    </Grid>
+                                    <ListBox x:Name="ScheduleList" Grid.Row="1" MaxHeight="170" Margin="0,10,0,0" AutomationProperties.Name="Profile schedules" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="1.1*" />
+                                                        <ColumnDefinition Width="1.2*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel>
+                                                        <TextBlock FontWeight="SemiBold" Text="{Binding Schedule.Name}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="{Binding StateLabel}" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="{Binding ProfileName}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="{Binding TimingLabel}" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="2" Padding="9,5" MinHeight="30" AutomationProperties.Name="{Binding Schedule.Name, StringFormat=Delete schedule {0}}" Click="DeleteScheduleButton_Click" Content="Delete" Tag="{Binding}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="3" MinHeight="220" Margin="0,14,0,0" Padding="22" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="7">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontSize="18" FontWeight="SemiBold" Text="WFP flow identity" />
+                                    <Border Margin="10,0,0,0" Padding="7,3" VerticalAlignment="Center" Background="{StaticResource RaisedBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="3">
+                                        <TextBlock x:Name="DriverFlowStateText" Foreground="{StaticResource MutedBrush}" FontSize="11" FontWeight="SemiBold" Text="CHECKING" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" Text="Recent classifications from the bounded kernel buffer" />
+                            </StackPanel>
+                            <Button x:Name="DriverFlowRefreshButton"
+                                    Grid.Column="1"
+                                    AutomationProperties.Name="Refresh WFP driver flow events"
+                                    Click="DriverFlowRefreshButton_Click"
+                                    Content="Refresh flows" />
+                        </Grid>
+                        <Grid Grid.Row="1">
+                            <ListBox x:Name="DriverFlowList"
+                                     MaxHeight="260"
+                                     AutomationProperties.Name="Recent WFP driver flow events"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     VirtualizingPanel.IsVirtualizing="True"
+                                     VirtualizingPanel.VirtualizationMode="Recycling">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="80" />
+                                                <ColumnDefinition Width="1.2*" />
+                                                <ColumnDefinition Width="90" />
+                                                <ColumnDefinition Width="1.5*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Foreground="{StaticResource CyanBrush}" FontWeight="SemiBold" Text="{Binding SequenceLabel}" />
+                                            <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                                                <TextBlock FontWeight="SemiBold" Text="{Binding ProcessLabel}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="{Binding ProcessIdLabel}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                                <TextBlock FontWeight="SemiBold" Text="{Binding DirectionLabel}" />
+                                                <TextBlock Margin="0,3,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11" Text="{Binding TransportLabel}" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="3">
+                                                <TextBlock Style="{StaticResource SectionLabel}" Text="APPLICATION ID HASH" />
+                                                <TextBlock Margin="0,3,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="11" Text="{Binding ApplicationIdHashLabel}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ApplicationIdHashLabel}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <StackPanel x:Name="DriverFlowLoadingState" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ProgressBar Width="180" Height="4" IsIndeterminate="True" />
+                                <TextBlock Margin="0,12,0,0" Foreground="{StaticResource MutedBrush}" Text="Reading the driver buffer..." />
+                            </StackPanel>
+                            <StackPanel x:Name="DriverFlowEmptyState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="No flow events yet" />
+                                <TextBlock Margin="0,6,0,0" Foreground="{StaticResource MutedBrush}" Text="In the test VM, start the WFP harness and generate network traffic." />
+                            </StackPanel>
+                            <StackPanel x:Name="DriverFlowUnavailableState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock x:Name="DriverFlowUnavailableTitle" HorizontalAlignment="Center" Foreground="{StaticResource MutedBrush}" FontSize="16" FontWeight="SemiBold" Text="WFP driver offline" />
+                                <TextBlock x:Name="DriverFlowUnavailableText" MaxWidth="560" Margin="0,6,0,0" TextAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" />
+                            </StackPanel>
+                            <StackPanel x:Name="DriverFlowErrorState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock HorizontalAlignment="Center" Foreground="{StaticResource DangerBrush}" FontSize="16" FontWeight="SemiBold" Text="Driver telemetry unavailable" />
+                                <TextBlock x:Name="DriverFlowErrorText" MaxWidth="560" Margin="0,6,0,0" TextAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" />
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+
+        <Border Grid.Row="2" Padding="20,10" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusText"
+                           Margin="0,0,16,0"
+                           Foreground="{StaticResource MutedBrush}"
+                           Text="Ready"
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                <TextBlock Grid.Column="1" Foreground="{StaticResource MutedBrush}" Text="Firewall + outbound QoS · WFP telemetry preview" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

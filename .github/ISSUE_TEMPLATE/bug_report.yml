@@ -1,0 +1,70 @@
+name: Bug report
+description: Report a reproducible OpenLimiter defect
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not test network rules against the only process that provides remote access to the PC. Load the WFP driver only in a recoverable test VM.
+  - type: input
+    id: version
+    attributes:
+      label: OpenLimiter version
+      placeholder: 0.3.0 or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2, OS build 26100.x
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Desktop GUI
+        - CLI
+        - Policy service
+        - Firewall blocking
+        - Upload QoS
+        - WFP driver or harness
+        - Installer or packaging
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      placeholder: Include the smallest safe sequence that reproduces the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Include service-status output and relevant logs. Remove private paths, usernames, IP addresses, and secrets first.
+      render: text
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I did not load an unsigned driver on a daily-use or remote-only machine.
+          required: true

@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OpenLimiter.App/OpenLimiter.App.csproj" />
+    <Project Path="src/OpenLimiter.Cli/OpenLimiter.Cli.csproj" />
+    <Project Path="src/OpenLimiter.Core/OpenLimiter.Core.csproj" />
+    <Project Path="src/OpenLimiter.Protocol/OpenLimiter.Protocol.csproj" />
+    <Project Path="src/OpenLimiter.Service/OpenLimiter.Service.csproj" />
+    <Project Path="src/OpenLimiter.Windows/OpenLimiter.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OpenLimiter.Cli.Tests/OpenLimiter.Cli.Tests.csproj" />
+    <Project Path="tests/OpenLimiter.Core.Tests/OpenLimiter.Core.Tests.csproj" />
+    <Project Path="tests/OpenLimiter.Service.Tests/OpenLimiter.Service.Tests.csproj" />
+    <Project Path="tests/OpenLimiter.Windows.Tests/OpenLimiter.Windows.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,42 @@
+name: Feature request
+description: Propose a focused network-control or usability improvement
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Describe the user problem before proposing an interface or implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Likely scope
+      options:
+        - Desktop GUI
+        - CLI
+        - Policy service
+        - Firewall or QoS enforcement
+        - WFP kernel driver
+        - Packaging or documentation
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Failure and recovery behavior
+      description: For enforcement features, explain what should happen on service exit, driver failure, or malformed configuration.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

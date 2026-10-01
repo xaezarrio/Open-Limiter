@@ -1,0 +1,13 @@
+<Project Sdk="WixToolset.Sdk/4.0.6">
+  <PropertyGroup>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <OutputType>Package</OutputType>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">$(VersionPrefix)</ProductVersion>
+    <PublishRoot Condition="'$(PublishRoot)' == ''">$(MSBuildThisFileDirectory)..\artifacts\publish\OpenLimiter-$(ProductVersion)-win-x64</PublishRoot>
+    <DefineConstants>PublishRoot=$(PublishRoot);ProductVersion=$(ProductVersion)</DefineConstants>
+    <OutputName>OpenLimiter-$(ProductVersion)-win-x64</OutputName>
+    <OutputPath>$(MSBuildThisFileDirectory)..\artifacts\installer\</OutputPath>
+    <DefaultCompressionLevel>high</DefaultCompressionLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

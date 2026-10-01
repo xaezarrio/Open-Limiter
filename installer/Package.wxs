@@ -1,0 +1,71 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="OpenLimiter"
+           Manufacturer="OpenLimiter contributors"
+           Version="$(ProductVersion)"
+           UpgradeCode="3B926544-C1F4-4E76-8A42-55EC392E9785"
+           Scope="perMachine"
+           InstallerVersion="500">
+    <SummaryInformation Description="Open-source per-process network controls for Windows" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of OpenLimiter is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="OpenLimiter">
+        <Directory Id="APPFOLDER" Name="app">
+          <Component Id="ApplicationExecutable" Guid="D41B7D43-32FE-45C2-A164-5E2B0D7D67DD" Bitness="always64">
+            <File Id="ApplicationExe" Source="$(PublishRoot)\app\OpenLimiter.exe" KeyPath="yes">
+              <Shortcut Id="StartMenuShortcut"
+                        Directory="ProgramMenuFolder"
+                        Name="OpenLimiter"
+                        Description="Per-process network controls"
+                        Advertise="yes"
+                        WorkingDirectory="APPFOLDER" />
+            </File>
+          </Component>
+        </Directory>
+        <Directory Id="SERVICEFOLDER" Name="service">
+          <Component Id="PolicyServiceExecutable" Guid="EDAC8115-3857-4FF7-A494-2F2F9BC04B04" Bitness="always64">
+            <File Id="PolicyServiceExe" Source="$(PublishRoot)\service\OpenLimiter.Service.exe" KeyPath="yes" />
+            <ServiceInstall Id="PolicyServiceInstaller"
+                            Name="OpenLimiterPolicy"
+                            DisplayName="OpenLimiter Policy Service"
+                            Description="Applies persistent per-application Windows Firewall and QoS policies for OpenLimiter."
+                            Type="ownProcess"
+                            Start="auto"
+                            ErrorControl="normal"
+                            Account="LocalSystem"
+                            Arguments="--allowed-user-sid [UserSID]" />
+            <ServiceControl Id="PolicyServiceControl"
+                            Name="OpenLimiterPolicy"
+                            Start="install"
+                            Stop="both"
+                            Remove="uninstall"
+                            Wait="yes" />
+          </Component>
+        </Directory>
+        <Directory Id="CLIFOLDER" Name="cli" />
+        <Directory Id="DOCSFOLDER" Name="docs" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="MainFeature" Title="OpenLimiter" Level="1">
+      <ComponentRef Id="ApplicationExecutable" />
+      <ComponentRef Id="PolicyServiceExecutable" />
+      <ComponentGroupRef Id="PayloadComponents" />
+    </Feature>
+
+    <CustomAction Id="CleanupOwnedPolicies"
+                  FileRef="PolicyServiceExe"
+                  ExeCommand="--cleanup"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+    <InstallExecuteSequence>
+      <Custom Action="CleanupOwnedPolicies"
+              After="StopServices"
+              Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+  </Package>
+</Wix>

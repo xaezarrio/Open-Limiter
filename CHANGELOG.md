@@ -54,6 +54,7 @@ semantic versioning once public releases begin.
 
 ### Fixed
 
+- Release binaries keep the declared semantic ProductVersion when built from Git or CI
 - Policy mutations now use a dedicated 45-second response window instead of the
   3-second service-connection timeout, preventing normal Windows QoS operations from
   being reported as an unavailable policy service

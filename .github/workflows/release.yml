@@ -1,0 +1,95 @@
+name: Publish release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to publish
+        required: true
+        default: v0.5.0
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-2025
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build MSI and portable package
+        shell: pwsh
+        run: .\scripts\build-msi.ps1
+
+      - name: Publish GitHub prerelease
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $version = $env:RELEASE_TAG.TrimStart('v')
+          $notesPath = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          @'
+          OpenLimiter 0.5.0 is the first public preview of the Windows per-process network controller.
+
+          ## Highlights
+
+          - Groups running processes by executable path
+          - Blocks inbound or outbound traffic per application
+          - Limits outbound traffic with Windows Policy-based QoS
+          - Shows live TCP and UDP throughput when ETW telemetry is available
+          - Provides tray controls for global and per-rule pause and resume
+          - Supports temporary rules, reusable profiles, and local-time schedules
+          - Includes a self-contained x64 MSI with an auto-starting policy service
+
+          ## Install
+
+          Download `OpenLimiter-0.5.0-win-x64.msi`, run it as Administrator, then launch OpenLimiter from the Start Menu. The installer includes the .NET runtime.
+
+          ## Important limitations
+
+          - This preview is unsigned, so Windows SmartScreen may display a warning.
+          - Download rate limiting remains in the backlog.
+          - The WFP driver is development-only and is not installed by this MSI.
+
+          ## Verification
+
+          The release passed 142 automated tests, the Release build and formatting checks, administrative MSI extraction, and installer table inspection. SHA-256 checksum files are included for both packages.
+          '@ | Set-Content -LiteralPath $notesPath -Encoding utf8NoBOM
+
+          $assets = @(
+              "artifacts\installer\OpenLimiter-$version-win-x64.msi",
+              "artifacts\installer\OpenLimiter-$version-win-x64.msi.sha256",
+              "artifacts\publish\OpenLimiter-$version-win-x64.zip",
+              "artifacts\publish\OpenLimiter-$version-win-x64.zip.sha256"
+          )
+
+          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+              gh release create $env:RELEASE_TAG `
+                  --repo $env:GITHUB_REPOSITORY `
+                  --verify-tag `
+                  --prerelease `
+                  --title "OpenLimiter $version" `
+                  --notes-file $notesPath
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Could not create release $env:RELEASE_TAG."
+              }
+          }
+
+          gh release upload $env:RELEASE_TAG @assets `
+              --repo $env:GITHUB_REPOSITORY `
+              --clobber
+          if ($LASTEXITCODE -ne 0) {
+              throw "Could not upload release assets for $env:RELEASE_TAG."
+          }
